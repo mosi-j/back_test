@@ -1,5 +1,4 @@
 venv/
 .idea/
 __pycache__/
-bt_setting.py
 server_setting.py
