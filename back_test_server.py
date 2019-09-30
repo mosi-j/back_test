@@ -450,7 +450,7 @@ class BackTestServer:
 
 
 if __name__ == '__main__':
-    from my_database_info import get_database_info, vps1_local_access, website_data
+    # from my_database_info import get_database_info, vps1_local_access, website_data
     from server_setting import web_order_db_info
     max_thread = 50
     # web_order_db_info = get_database_info(pc_name=vps1_local_access, database_name=website_data)
