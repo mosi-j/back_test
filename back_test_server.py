@@ -13,6 +13,16 @@ import threading
 
 from copy import deepcopy
 
+server_status_running = 'running'
+server_status_stopping = 'stopping'
+server_status_stop = 'stop'
+
+server_status_shutting_down = 'shutting down'
+server_status_shutdown = 'shutdown'
+
+server_status_sleeping = 'sleeping'
+server_status_waiting = 'waiting'
+
 
 class run_back_test_thread_obj(threading.Thread):
     def __init__(self, data, running_list, db_web_order, order_id):
@@ -78,12 +88,32 @@ class run_back_test_thread_obj(threading.Thread):
 
 
 class BackTestServer:
-    def __init__(self, web_order_db_info, max_thread=1):
+    def __init__(self, web_order_db_info, status, main_process_name, max_thread=1):
         self.print_color = 'green'
 
         self.max_thread = max_thread
         self.db_web_order = Database(web_order_db_info)
+        self._status = status
+        self.main_process_name = main_process_name
         # self.db_analyze_data = Database(analyze_db_info)
+        self._status[self.main_process_name] = server_status_shutdown
+
+    def shutdown(self):
+        self._status[self.main_process_name] = server_status_shutting_down
+
+    def start(self):
+        if self._status[self.main_process_name] != server_status_shutdown:
+            self._status[self.main_process_name] = server_status_running
+        else:
+            self._status[self.main_process_name] = server_status_running
+
+            #self.run_new()
+
+    def stop(self):
+        self._status[self.main_process_name] = server_status_stopping
+
+    def status(self):
+        return self._status[self.main_process_name]
 
     def print_c(self, text, color=None):
         try:
@@ -96,20 +126,45 @@ class BackTestServer:
             print(str(e))
 
     def run_new(self):
-        while True:
+        m = 0
+        self._status[self.main_process_name] = server_status_running
+        self.print_c('self._status: {}'.format(self._status[self.main_process_name]))
+        #self._status = server_status_stop
+        self.print_c('self._status: {}'.format(self._status[self.main_process_name]))
+
+
+        while self._status[self.main_process_name] != server_status_shutting_down:
+            # m += 1
+            while self._status[self.main_process_name] in [server_status_stopping, server_status_stop]:
+                self._status[self.main_process_name] = server_status_stop
+                sleep(10)
+
+            if self._status[self.main_process_name] == server_status_shutting_down:
+                continue
+
             # get order
             order, err = self.db_web_order.get_order_new(order_run_time=12)
             if err is not None:
+                if self._status[self.main_process_name] in [server_status_stopping, server_status_shutting_down]:
+                    continue
+
                 if err == 'no any order':
+                    self._status[self.main_process_name] = server_status_waiting
                     self.print_c('no any order: wait 60 second')
                     # clear sub result table
                     # self.db_web_order.clean_sub_order_table()
                     sleep(60)
                     continue
                 else:
+                    self._status[self.main_process_name] = server_status_sleeping
                     self.print_c(err)
                     self.print_c('wait 10 second')
-                    sleep(10)
+                    sleep(5)
+                    # print(m)
+                    # if m > 3:
+                     #    self._status[self.main_process_name] = server_status_shutting_down
+                      #   m = 0
+
                     continue
 
             username = order[1]
@@ -118,6 +173,8 @@ class BackTestServer:
 
             # -----------------------------------------------------
             # run order
+            self._status[self.main_process_name] = server_status_running
+
             result, start_time, order_run_time, sum_run_time, error = self.run_order(order_id, input_params)
 
             if error is None:
@@ -131,6 +188,11 @@ class BackTestServer:
                                                                      sum_run_time=sum_run_time)
                 if err is not None:
                     self.print_c(err)
+
+                    if self._status[self.main_process_name] in [server_status_stopping, server_status_shutting_down]:
+                        continue
+
+                    self._status[self.main_process_name] = server_status_sleeping
                     self.print_c('wait 10 second')
                     sleep(10)
                     continue
@@ -155,8 +217,16 @@ class BackTestServer:
 
             else:
                 self.print_c('fail run order: {0} : result: {1} error: {2}'.format(order_id, result, error))
+                if self._status[self.main_process_name] in [server_status_stopping, server_status_shutting_down]:
+                    continue
+
+                self._status[self.main_process_name] = server_status_sleeping
                 self.print_c('wait 10 second')
                 sleep(10)
+
+
+        self._status[self.main_process_name] = server_status_shutdown
+
 
     def run_order(self, order_id, input_params):
         error = None
@@ -456,4 +526,4 @@ if __name__ == '__main__':
     # web_order_db_info = get_database_info(pc_name=vps1_local_access, database_name=website_data)
     server = BackTestServer(web_order_db_info=web_order_db_info, max_thread=max_thread)
 
-    server.run_new()
+    server.start()
