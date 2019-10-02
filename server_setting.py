@@ -2,7 +2,7 @@ from my_database_info import get_database_info, vps1_remote_access, server_lan_a
 from my_database_info import website_data, tsetmc_and_analyze_data
 
 web_order_db_info = get_database_info(vps1_remote_access, website_data)
-analyze_db_info = get_database_info(server_lan_access, tsetmc_and_analyze_data)
+analyze_db_info = get_database_info(vps1_remote_access, tsetmc_and_analyze_data)
 
 status_folder_name = '.single_server_status'
 status_file_profix = 'btss'

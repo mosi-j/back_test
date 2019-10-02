@@ -299,7 +299,8 @@ class BackTestMultiOrderServer:
                 continue
 
             # get order
-            order, err = self.db_web_order.get_order_new(order_run_time=12)
+            avg_order_run_time = 60 * 30
+            order, err = self.db_web_order.get_order_new(order_run_time=avg_order_run_time)
             if err is not None:
                 if self.get_status() in [server_status_stopping, server_status_shutting_down]:
                     continue
