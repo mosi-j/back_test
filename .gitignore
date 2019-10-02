@@ -2,3 +2,4 @@ venv/
 .idea/
 __pycache__/
 server_setting.py
+.single_server_status/
