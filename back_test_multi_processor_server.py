@@ -14,7 +14,7 @@ class BackTestSingleProcessServerObj(Process):
     def __init__(self, web_order_db_info, process_name, max_thread):
         self.process_name = process_name
         self.back_test_server = BackTestMultiOrderServer(web_order_db_info=web_order_db_info,
-                                                         main_process_name=process_name,
+                                                         process_name=process_name,
                                                          max_thread=max_thread)
 
         self.status_file_name = '{0}/{1}.{2}'.format(status_folder_name, self.process_name, status_file_profix)

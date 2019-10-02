@@ -86,16 +86,14 @@ class BackTestSingleOrderObj(threading.Thread):
 
 
 class BackTestMultiOrderServer:
-    def __init__(self, web_order_db_info, main_process_name, max_thread=1):
+    def __init__(self, web_order_db_info, process_name, max_thread=1):
         self.print_color = 'green'
 
         self.max_thread = max_thread
         self.db_web_order = Database(web_order_db_info)
-        self.main_process_name = main_process_name
-        # self.db_analyze_data = Database(analyze_db_info)
-        # self._status[self.main_process_name] = server_status_shutdown
+        self.process_name = process_name
 
-        self.status_file_name = '{}/{}.{}'.format(status_folder_name, self.main_process_name, status_file_profix)
+        self.status_file_name = '{}/{}.{}'.format(status_folder_name, self.process_name, status_file_profix)
         self.init_status_file()
         self.set_status(server_status_shutdown)
 
@@ -290,7 +288,6 @@ class BackTestMultiOrderServer:
 
     def run(self, clean_sub_order_result=False):
         self.set_status(server_status_running)
-        self.print_c('self._status: {}'.format(self.get_status()))
 
         while self.get_status() != server_status_shutting_down:
             # m += 1
@@ -313,14 +310,13 @@ class BackTestMultiOrderServer:
 
                     self.set_status(server_status_waiting)
                     # self.set_status(server_status_stop)
-                    self.print_c('no any order: wait 60 second')
+                    self.print_c('{0}: no any order: wait 60 second'.format(self.process_name))
                     sleep(60)
 
                 else:
                     self.set_status(server_status_sleeping)
-                    self.print_c(err)
-                    self.print_c('wait 10 second')
-                    sleep(5)
+                    self.print_c('{0}: error: {1} --> wait 10 second'.format(err, self.process_name))
+                    sleep(10)
                 continue
 
             username = order[1]
@@ -343,17 +339,16 @@ class BackTestMultiOrderServer:
                                                                      order_run_time=order_run_time,
                                                                      sum_run_time=sum_run_time)
                 if err is not None:
-                    self.print_c(err)
-
                     if self.get_status() in [server_status_stopping, server_status_shutting_down]:
+                        self.print_c('{0}: error: {1}'.format(self.process_name, err))
                         continue
 
                     self.set_status(server_status_sleeping)
-                    self.print_c('wait 10 second')
+                    self.print_c('{0}: error: {1} --> wait 10 second'.format(self.process_name, err))
                     sleep(10)
                     continue
 
-                self.print_c('finish: insert_web_order_result')
+                self.print_c('{}: finish: insert_web_order_result'.format(self.process_name))
                 # res, err = self.db_analyze_data.insert_back_test_result(order_id=order_id,
                 #                                                        username=username,
                 #                                                        input_param=str(input_params),
@@ -363,7 +358,7 @@ class BackTestMultiOrderServer:
                 #                                                        sum_run_time=sum_run_time)
                 # self.print_c('finish: insert_back_test_result')
 
-                self.print_c('finish run order: {0} : result: {1}'.format(order_id, result))
+                self.print_c('{0}: finish run order: {1} : result: {2}'.format(self.process_name, order_id, result))
 
                 # remove order from waiting_order table
                 self.db_web_order.remove_order(order_id)
@@ -373,12 +368,14 @@ class BackTestMultiOrderServer:
                     self.db_web_order.clean_sub_order_result(order_id)
 
             else:
-                self.print_c('fail run order: {0} : result: {1} error: {2}'.format(order_id, result, error))
                 if self.get_status() in [server_status_stopping, server_status_shutting_down]:
+                    self.print_c('{0}: fail run order: {1} result: {2} error: {3}'
+                                 .format(self.process_name, order_id, result, error))
                     continue
 
                 self.set_status(server_status_sleeping)
-                self.print_c('wait 10 second')
+                self.print_c('{0}: fail run order: {1} result: {2} error: {3} --> wait 10 second'
+                             .format(self.process_name, order_id, result, error))
                 sleep(10)
 
         self.set_status(server_status_shutdown)
@@ -390,7 +387,7 @@ if __name__ == '__main__':
     max_thread = 50
     # web_order_db_info = get_database_info(pc_name=vps1_local_access, database_name=website_data)
     server = BackTestMultiOrderServer(web_order_db_info=web_order_db_info,
-                                      main_process_name='test',
+                                      process_name='test',
                                       max_thread=max_thread)
 
     server.run()
