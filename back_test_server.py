@@ -1,20 +1,28 @@
-
 from time import sleep
 from datetime import datetime
 from new_database import Database
-# from bt_setting import bt_database_info as analyze_db_info
-# from server_setting import web_order_db_info
-
 from app import App
 import ast
-from my_time import get_now_time_second, time_to_second
+from my_time import time_to_second
 from termcolor import colored
 import threading
 
 from copy import deepcopy
+import os
+from server_setting import status_folder_name, status_file_profix
+
+server_status_running = 'running'
+server_status_stopping = 'stopping'
+server_status_stop = 'stop'
+
+server_status_shutting_down = 'shutting down'
+server_status_shutdown = 'shutdown'
+
+server_status_sleeping = 'sleeping'
+server_status_waiting = 'waiting'
 
 
-class run_back_test_thread_obj(threading.Thread):
+class BackTestSingleOrderObj(threading.Thread):
     def __init__(self, data, running_list, db_web_order, order_id):
         self.print_color = 'red'
         self.data = data
@@ -77,13 +85,42 @@ class run_back_test_thread_obj(threading.Thread):
         return result
 
 
-class BackTestServer:
-    def __init__(self, web_order_db_info, max_thread=1):
+class BackTestMultiOrderServer:
+    def __init__(self, web_order_db_info, main_process_name, max_thread=1):
         self.print_color = 'green'
 
         self.max_thread = max_thread
         self.db_web_order = Database(web_order_db_info)
+        self.main_process_name = main_process_name
         # self.db_analyze_data = Database(analyze_db_info)
+        # self._status[self.main_process_name] = server_status_shutdown
+
+        self.status_file_name = '{}/{}.{}'.format(status_folder_name, self.main_process_name, status_file_profix)
+        self.init_status_file()
+        self.set_status(server_status_shutdown)
+
+    def init_status_file(self):
+        if not os.path.exists(self.status_file_name):
+            if os.path.dirname(self.status_file_name) != '':
+                if not os.path.exists(os.path.dirname(self.status_file_name)):
+                    os.makedirs(os.path.dirname(self.status_file_name))
+            f = open(self.status_file_name, 'w', encoding='utf_8')
+            f.close()
+
+    def remove_status_file(self):
+        if os.path.exists(self.status_file_name):
+            os.remove(self.status_file_name)
+
+    def set_status(self, text):
+        f = open(self.status_file_name, 'w', encoding='utf_8')
+        f.write(text)
+        f.close()
+
+    def get_status(self):
+        f = open(self.status_file_name, 'r', encoding='utf_8')
+        res = f.readline()
+        f.close()
+        return res
 
     def print_c(self, text, color=None):
         try:
@@ -94,69 +131,6 @@ class BackTestServer:
         except Exception as e:
             # self.__print_c(str(e), 'red')
             print(str(e))
-
-    def run_new(self):
-        while True:
-            # get order
-            order, err = self.db_web_order.get_order_new(order_run_time=12)
-            if err is not None:
-                if err == 'no any order':
-                    self.print_c('no any order: wait 60 second')
-                    # clear sub result table
-                    # self.db_web_order.clean_sub_order_table()
-                    sleep(60)
-                    continue
-                else:
-                    self.print_c(err)
-                    self.print_c('wait 10 second')
-                    sleep(10)
-                    continue
-
-            username = order[1]
-            order_id = order[0]
-            input_params = ast.literal_eval(order[2])
-
-            # -----------------------------------------------------
-            # run order
-            result, start_time, order_run_time, sum_run_time, error = self.run_order(order_id, input_params)
-
-            if error is None:
-                # insert result to db
-                res, err = self.db_web_order.insert_web_order_result(order_id=order_id,
-                                                                     username=username,
-                                                                     input_param=str(input_params),
-                                                                     result=str(result),
-                                                                     start_time=start_time,
-                                                                     order_run_time=order_run_time,
-                                                                     sum_run_time=sum_run_time)
-                if err is not None:
-                    self.print_c(err)
-                    self.print_c('wait 10 second')
-                    sleep(10)
-                    continue
-
-                self.print_c('finish: insert_web_order_result')
-                # res, err = self.db_analyze_data.insert_back_test_result(order_id=order_id,
-                #                                                        username=username,
-                #                                                        input_param=str(input_params),
-                #                                                        result=str(result),
-                #                                                        start_time=start_time,
-                #                                                        order_run_time=order_run_time,
-                #                                                        sum_run_time=sum_run_time)
-                # self.print_c('finish: insert_back_test_result')
-
-                self.print_c('finish run order: {0} : result: {1}'.format(order_id, result))
-
-                # remove order from waiting_order table
-                self.db_web_order.remove_order(order_id)
-
-                # remove sub order from sub_order_result table
-                self.db_web_order.clean_sub_order_result(order_id)
-
-            else:
-                self.print_c('fail run order: {0} : result: {1} error: {2}'.format(order_id, result, error))
-                self.print_c('wait 10 second')
-                sleep(10)
 
     def run_order(self, order_id, input_params):
         error = None
@@ -188,7 +162,7 @@ class BackTestServer:
         while try_num < max_try or break_order is False:
             try_num += 1
             self.waiting_list = deepcopy(input_params['en_symbol_12_digit_code_list'])
-            #self.waiting_list = deepcopy(input_params['accepted_symbol_list'])
+            # self.waiting_list = deepcopy(input_params['accepted_symbol_list'])
             self.running_list = list()
 
             self.print_c('try number: {0}'.format(try_num))
@@ -235,7 +209,7 @@ class BackTestServer:
 
                     self.print_c('create thread {0}. thread count: {1}'.format(
                         en_symbol_12_digit_code, threading.active_count() - 1))
-                    t = run_back_test_thread_obj(self.data, self.running_list, self.db_web_order, order_id)
+                    t = BackTestSingleOrderObj(self.data, self.running_list, self.db_web_order, order_id)
                     # sleep(0.1)
                     t.setName(en_symbol_12_digit_code)
                     t.start()
@@ -314,139 +288,100 @@ class BackTestServer:
         order_run_time = end_time - start_time
         return result, start_time, order_run_time, sum_run_time, error
 
-    def run_old(self):
-        while True:
-            # get order
-            # i=0
-            order, err = self.db_web_order.get_order()
-            if err is not None:
-                self.print_c(err)
+    def run(self, clean_sub_order_result=False):
+        self.set_status(server_status_running)
+        self.print_c('self._status: {}'.format(self.get_status()))
 
-            if len(order) == 0:  # no any order
-                # clear sub result table
-                # self.db_web_order.clean_sub_order_table()
-                self.print_c('wait: 10')
+        while self.get_status() != server_status_shutting_down:
+            # m += 1
+            while self.get_status() in [server_status_stopping, server_status_stop]:
+                self.set_status(server_status_stop)
                 sleep(10)
+
+            if self.get_status() == server_status_shutting_down:
                 continue
 
-            self.print_c(order)
-            order = order[0]
-
-            # username = order['username']
-            username = order[1]
-            # order_id = order['order_id']
-            order_id = order[0]
-            # input_params = ast.literal_eval(order['input_param'])
-            input_params = ast.literal_eval(order[2])
-            expire_time = get_now_time_second() + 10
-
-            self.db_web_order.update_order_expire_time(order_id, expire_time)
-
-            # -----------------------------------------------------
-            adjusted_type = int(input_params['adjusted_type'])
-            start_date_time = int(input_params['start_date_time'])
-            end_date_time = int(input_params['end_date_time'])
-            time_frame = input_params['time_frame']
-            max_benefit_up = float(input_params['max_benefit_up']) / 100
-            max_benefit_down = float(input_params['max_benefit_down']) / 100
-            order_total = int(input_params['order_total'])
-            order_same = int(input_params['order_same'])
-            data_type = input_params['data_type']
-            accepted_symbol_list = input_params['accepted_symbol_list']
-            output_format = input_params['output_format']
-            strategy_variable = input_params['strategy_variable']
-            strategy_context = input_params['strategy_context']
-            strategy = (strategy_variable, strategy_context)
-            # -----------------------------------------------------
-
-            waiting_list = accepted_symbol_list
-            running_list = list()
-
-            while len(waiting_list) > 0:
-                start_running_time = datetime.now()
-
-                # get symbol
-                while True:
-                    if len(waiting_list) == 0:
-                        en_symbol_12_digit_code = None
-                        break
-
-                    en_symbol_12_digit_code = waiting_list.pop()
-                    res = self.db_web_order.exist_sub_order_result(order_id, en_symbol_12_digit_code)
-                    if res is True:
-                        continue
-
-                    if en_symbol_12_digit_code in running_list:
-                        continue
-
-                    running_list.append(en_symbol_12_digit_code)
-                    break
-
-                if en_symbol_12_digit_code is None:
+            # get order
+            order, err = self.db_web_order.get_order_new(order_run_time=12)
+            if err is not None:
+                if self.get_status() in [server_status_stopping, server_status_shutting_down]:
                     continue
 
-                app = App(strategy, output_format, start_date_time, end_date_time, time_frame, adjusted_type,
-                          max_benefit_up, max_benefit_down, order_total, order_same, data_type)
+                if err == 'no any order':
+                    # clear sub result table
+                    self.db_web_order.clean_sub_order_table()
 
-                app.set_en_symbol_12_digit_code_list([en_symbol_12_digit_code])
-                # app.add_output_format_list(['max_benefit'])
-                opt = app.run()
+                    self.set_status(server_status_waiting)
+                    # self.set_status(server_status_stop)
+                    self.print_c('no any order: wait 60 second')
+                    sleep(60)
 
-                run_time = (datetime.now() - start_running_time).total_seconds()
+                else:
+                    self.set_status(server_status_sleeping)
+                    self.print_c(err)
+                    self.print_c('wait 10 second')
+                    sleep(5)
+                continue
 
-                self.db_web_order.insert_web_order_sub_result(order_id=order_id,
-                                                              symbol=en_symbol_12_digit_code,
-                                                              result=str(opt),
-                                                              start_run_time=str(start_running_time),
-                                                              run_time=run_time)
-                running_list.remove(en_symbol_12_digit_code)
+            username = order[1]
+            order_id = order[0]
+            input_params = ast.literal_eval(order[2])
 
-            self.print_c('1')
-            all_result, err = self.db_web_order.get_all_sub_result(order_id)
-            # symbol, result, start_time, run_time
-            if err is not None:
-                self.print_c(err)
-                pass
-            self.print_c(all_result)
+            # -----------------------------------------------------
+            # run order
+            self.set_status(server_status_running)
 
-            start_time = all_result[0][2]
-            run_time = 0
-            opt = list()
-            # opt_str = ''
-            for item in all_result:
-                if start_time > item[2]:
-                    start_time = item[2]
+            result, start_time, order_run_time, sum_run_time, error = self.run_order(order_id, input_params)
 
-                run_time += item[3]
-                opt_item = ast.literal_eval(item[1])
-                opt.append(opt_item)
-                # opt_str += str(opt_item) + ', '
-            self.print_c('2')
-            # self.print_c('opt list')
-            # self.print_c(opt)
-            # self.print_c(len(opt))
-            # self.print_c('opt_str')
-            # self.print_c(opt_str)
-            # self.print_c(len(opt_str))
-            # insert result to db
-            res, err = self.db_web_order.insert_web_order_result(order_id=order_id, username=username,
-                                                                 input_param=str(input_params), result=str(opt),
-                                                                 start_time=start_time, sum_run_time=run_time,
-                                                                 order_run_time=run_time)
-            self.print_c('3')
-            # self.print_c(res)
-            # self.print_c(err)
+            if error is None:
+                # insert result to db
+                res, err = self.db_web_order.insert_web_order_result(order_id=order_id,
+                                                                     username=username,
+                                                                     input_param=str(input_params),
+                                                                     result=str(result),
+                                                                     start_time=start_time,
+                                                                     order_run_time=order_run_time,
+                                                                     sum_run_time=sum_run_time)
+                if err is not None:
+                    self.print_c(err)
 
-            res, err = self.db_analyze_data.insert_back_test_result(order_id=order_id, username=username,
-                                                                    input_param=str(input_params), result=str(opt),
-                                                                    start_time=start_time, sum_run_time=run_time,
-                                                                    order_run_time=run_time)
-            self.print_c('4')
-            # self.print_c(res)
-            # self.print_c(err)
+                    if self.get_status() in [server_status_stopping, server_status_shutting_down]:
+                        continue
 
-            # remove order from waiting_order table
-            # self.db_web_order.remove_order(order_id)
+                    self.set_status(server_status_sleeping)
+                    self.print_c('wait 10 second')
+                    sleep(10)
+                    continue
+
+                self.print_c('finish: insert_web_order_result')
+                # res, err = self.db_analyze_data.insert_back_test_result(order_id=order_id,
+                #                                                        username=username,
+                #                                                        input_param=str(input_params),
+                #                                                        result=str(result),
+                #                                                        start_time=start_time,
+                #                                                        order_run_time=order_run_time,
+                #                                                        sum_run_time=sum_run_time)
+                # self.print_c('finish: insert_back_test_result')
+
+                self.print_c('finish run order: {0} : result: {1}'.format(order_id, result))
+
+                # remove order from waiting_order table
+                self.db_web_order.remove_order(order_id)
+
+                # remove sub order from sub_order_result table
+                if clean_sub_order_result is True:
+                    self.db_web_order.clean_sub_order_result(order_id)
+
+            else:
+                self.print_c('fail run order: {0} : result: {1} error: {2}'.format(order_id, result, error))
+                if self.get_status() in [server_status_stopping, server_status_shutting_down]:
+                    continue
+
+                self.set_status(server_status_sleeping)
+                self.print_c('wait 10 second')
+                sleep(10)
+
+        self.set_status(server_status_shutdown)
 
 
 if __name__ == '__main__':
@@ -454,6 +389,8 @@ if __name__ == '__main__':
     from server_setting import web_order_db_info
     max_thread = 50
     # web_order_db_info = get_database_info(pc_name=vps1_local_access, database_name=website_data)
-    server = BackTestServer(web_order_db_info=web_order_db_info, max_thread=max_thread)
+    server = BackTestMultiOrderServer(web_order_db_info=web_order_db_info,
+                                      main_process_name='test',
+                                      max_thread=max_thread)
 
-    server.run_new()
+    server.run()
