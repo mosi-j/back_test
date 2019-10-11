@@ -43,7 +43,7 @@ class TimeSeriesData:
         self.all_raw_adjusted_data = None
         self.all_raw_adjusted_data_error = None
         self.__update_all_raw_adjusted_data()
-        #self.all_raw_adjusted_data, all_raw_adjusted_data_error = self.__get_raw_adjusted_data()
+        # self.all_raw_adjusted_data, all_raw_adjusted_data_error = self.__get_raw_adjusted_data()
 
         self.all_order_benefit_data, all_order_benefit_data_error = self.__get_order_benefit_data()
 

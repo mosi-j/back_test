@@ -11,11 +11,12 @@ from termcolor import colored
 
 
 class BackTestSingleProcessServerObj(Process):
-    def __init__(self, web_order_db_info, process_name, max_thread):
+    def __init__(self, web_order_db_info, process_name, max_thread, order_avg_run_time):
         self.process_name = process_name
         self.back_test_server = BackTestMultiOrderServer(web_order_db_info=web_order_db_info,
                                                          process_name=process_name,
-                                                         max_thread=max_thread)
+                                                         max_thread=max_thread,
+                                                         order_avg_run_time=order_avg_run_time)
 
         self.status_file_name = '{0}/{1}.{2}'.format(status_folder_name, self.process_name, status_file_profix)
 
@@ -56,12 +57,13 @@ class BackTestSingleProcessServerObj(Process):
 
 
 class BackTestMultiProcessServer:
-    def __init__(self, web_order_db_info, max_process_count, process_max_thread, cycle_time, process_name=''):
+    def __init__(self, web_order_db_info, max_process_count, process_max_thread, cycle_time, order_avg_run_time, process_name=''):
         self.process_list = list()
         self.web_order_db_info = web_order_db_info
         self.cycle_time = cycle_time
         self.max_process_count = max_process_count
         self.process_name = process_name + '_'
+        self.order_avg_run_time = order_avg_run_time
         self.process_max_thread = process_max_thread
         self.process_sub_name = 0
         self.print_color = 'red'
@@ -215,7 +217,8 @@ class BackTestMultiProcessServer:
                     self.print_c('create new process: {0}'.format(process_name), 'green')
                     self.process_list.append(BackTestSingleProcessServerObj(process_name=process_name,
                                                                             max_thread=self.process_max_thread,
-                                                                            web_order_db_info=self.web_order_db_info))
+                                                                            web_order_db_info=self.web_order_db_info,
+                                                                            order_avg_run_time=self.order_avg_run_time))
 
                     self.process_list[-1].start()
 
@@ -232,12 +235,14 @@ class BackTestMultiProcessServer:
 if __name__ == '__main__':
     from server_setting import back_test_multi_process_server_process_name, \
         back_test_multi_process_server_cycle_time, back_test_multi_process_server_process_max_thread, \
-        back_test_multi_process_server_max_process_count, web_order_db_info
+        back_test_multi_process_server_max_process_count, web_order_db_info, \
+        back_test_multi_process_server_process_order_avg_run_time
 
     s = BackTestMultiProcessServer(web_order_db_info=web_order_db_info,
                                    max_process_count=back_test_multi_process_server_max_process_count,
                                    process_max_thread=back_test_multi_process_server_process_max_thread,
                                    cycle_time=back_test_multi_process_server_cycle_time,
-                                   process_name=back_test_multi_process_server_process_name
+                                   process_name=back_test_multi_process_server_process_name,
+                                   order_avg_run_time=back_test_multi_process_server_process_order_avg_run_time
                                    )
     s.run()

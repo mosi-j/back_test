@@ -8,7 +8,8 @@ status_folder_name = '.single_server_status'
 status_file_profix = 'btss'
 
 # BackTestMultiProcessServer
-back_test_multi_process_server_max_process_count = 3
+back_test_multi_process_server_max_process_count = 1
 back_test_multi_process_server_process_max_thread = 10
+back_test_multi_process_server_process_order_avg_run_time = 60 * 0.1
 back_test_multi_process_server_cycle_time = 6
 back_test_multi_process_server_process_name = 'server_1'

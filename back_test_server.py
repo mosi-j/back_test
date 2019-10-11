@@ -87,10 +87,11 @@ class BackTestSingleOrderThreadObj(threading.Thread):
 
 
 class BackTestMultiOrderServer:
-    def __init__(self, web_order_db_info, process_name, max_thread=1):
+    def __init__(self, web_order_db_info, process_name, max_thread=1, order_avg_run_time=1800):
         self.print_color = 'green'
 
         self.max_thread = max_thread
+        self.order_avg_run_time = order_avg_run_time
         self.db_web_order = Database(web_order_db_info)
         self.process_name = process_name
 
@@ -363,8 +364,8 @@ class BackTestMultiOrderServer:
                 continue
 
             # get order
-            avg_order_run_time = 60 * 30
-            order, err = self.db_web_order.get_order_new(order_run_time=avg_order_run_time)
+            # order_avg_run_time = 60 * 30
+            order, err = self.db_web_order.get_order_new(order_run_time=self.order_avg_run_time)
             if err is not None:
                 if self.get_status() in [server_status_stopping, server_status_shutting_down]:
                     continue
@@ -685,10 +686,13 @@ class BackTestMultiOrderServer:
 if __name__ == '__main__':
     # from my_database_info import get_database_info, vps1_local_access, website_data
     from server_setting import web_order_db_info
+
+    order_avg_run_time = 60 * 30
     max_thread = 5
     # web_order_db_info = get_database_info(pc_name=vps1_local_access, database_name=website_data)
     server = BackTestMultiOrderServer(web_order_db_info=web_order_db_info,
                                       process_name='test',
-                                      max_thread=max_thread)
+                                      max_thread=max_thread,
+                                      order_avg_run_time=order_avg_run_time)
 
     server.run()
