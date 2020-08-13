@@ -27,7 +27,7 @@ class Database:
             self.log.error('cant create database object: ', str(e))
             return
 
-    def get_connection(self, ):
+    def get_connection(self):
         try:
             if self.db_port is None:
                 con = pymysql.connect(host=self.db_host_name, user=self.db_username, password=self.db_user_password, db=self.db_name)
@@ -48,7 +48,7 @@ class Database:
 
     def select_query(self, query, args, mod=0):
         # mod=0 => return cursor
-        # mod=1 => retyrn cursor.fetchall()
+        # mod=1 => return cursor.fetchall()
         error = None
         self.log.trace()
         if query == '':

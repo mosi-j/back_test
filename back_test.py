@@ -92,7 +92,6 @@ class orders():
         self.order_list = list()
         self.default_calc_type = [total, same]
 
-
     def set_default_calc_type(self, total, same):
         if total is not None and same is not None:
             if same > total:

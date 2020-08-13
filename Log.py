@@ -129,7 +129,7 @@ class Logging:
         if self.log_trace_active:
             stack_trace = ''
             for row in inspect.stack()[1:]:
-                stack_trace = '{ ' + os.path.basename(str(row[1])) + ' , ' + str(row[2]) + ' , ' + str(row[3]) + ' } --> '+stack_trace
+                stack_trace = '{ ' + os.path.basename(str(row[1])) + ' , ' + str(row[2]) + ' , ' + str(row[3]) + ' } --> ' + stack_trace
             stack_trace = stack_trace.rstrip(" --> ")
             log_text = '{ ' + os.path.basename(str(inspect.stack()[1][1])) + ' , ' + str(inspect.stack()[1][2]) + ' , ' + str(inspect.stack()[1][3]) + ' }'
             self.write(log_text, Log_Level.trace, stack_trace, 'blue')

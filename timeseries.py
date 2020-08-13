@@ -876,132 +876,162 @@ class TimeSeriesData:
 
 
 if __name__ == '__main__':
-    # database_info = constant_database_data.pc1_server_role_db_info
-    database_info = constant_database_data.laptop_analyze_server_role_db_info
-    # پتروشيمي مارون
-    en_symbol_12_digit_code = 'IRO3PMRZ0001'
-    tsetmc_id = '53449700212786324'
-    date_m = 20190610
+    import time
+    start = time.time()
+    from my_database_info import get_database_info, laptop_local_access
 
-    start_date_time = 20180610000000
-    #start_date_time = 20120106000000
-    end_date_time = 20190610000000
-    #end_date_time = 20180825000000
-    #end_date_time = 20180611000000
+    database_info = get_database_info(laptop_local_access, 'bourse_analyze_server_0.1')
+    en_symbol_12_digit_code = 'IRO1ABDI0001'
+    start_date_time = 20081215114810
+    #start_date_time = 20130211114810
+    today_date_time = 20190703122950
+    time_frame = 'MN1'
+    data_type = constant.ts_data_type_all
+    adjust_today_candle = constant.adjusted_mod_now_time
+    adjusted_type = constant.adjusted_type_all
+    data_count = 0
+    log_obj = None
 
-    time_frame = 'D1'
-    adjusted_mod = constant.adjusted_mod_off
-    data_count = 500
+    print('start')
 
-    ts_data = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
-                 time_frame, adjusted_mod, 1, data_count=data_count)
+    a = TimeSeriesData(database_info=database_info, en_symbol_12_digit_code=en_symbol_12_digit_code,
+                       start_date_time=start_date_time, end_date_time=today_date_time,
+                       time_frame=time_frame, adjusted_mod=adjust_today_candle, adjusted_type=adjusted_type, data_count=0)
 
-    day_index = 0
-    list_len = 500
+    for i in range(1000):
+        print(i)
+        b = a.get_data(candle_index=i, candle_count=50000, data_type=data_type)
+        print(b[0][0:2])
+    print(time.time() - start)
 
-    d = ts_data.get_candle_date(day_index)
-
-    ts_data.print_c(d)
-    ts_data.print_c(ts_data.candle_date_list)
-
-    ts_data.print_c(ts_data.no_any_data)
-
-
-    print(ts_data.get_data(day_index, list_len))
-
-
-
-
-
-
-    t=False
-    if t:
-
-        err = None
-        res= ts_data.all_raw_adjusted_data
-        ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-        ts_data.print_c('-----------------------------')
-
-        res, err = ts_data.get_data(day_index, list_len)
-        ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data.get_adjusted_coefficient(int(end_date_time / 1000000))
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        ts_data.print_c(1)
-        #start_date_time = 20180610000000
-        #end_date_time = 20180724000000
-        #time_frame = 'D1'
-        adjusted_mod = constant.adjusted_mod_all_time
-        #data_count = 0
-
-        ts_data2 = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
-                     time_frame, adjusted_mod, 1, data_count=data_count)
-
-        res, err = ts_data2.get_data(day_index, list_len)
-        ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data2.get_adjusted_coefficient(int(end_date_time / 1000000))
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        ts_data.print_c(2)
-        #start_date_time = 20180610000000
-        #end_date_time = 20180724000000
-        #time_frame = 'D1'
-        adjusted_mod = constant.adjusted_mod_now_time
-        #data_count = 0
-
-        ts_data3 = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
-                     time_frame, adjusted_mod, 1, data_count=data_count)
-
-        res, err = ts_data3.get_data(day_index, list_len)
-        ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        res = ts_data3.all_raw_adjusted_data
-        ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data3.get_adjusted_coefficient(int(end_date_time/1000000))
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data3.get_adjusted_coefficient(20170730)
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data3.get_adjusted_coefficient(20170930)
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-
-        # res, err = ts_data3.get_adjusted_coefficient(10200930)
-        # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
-        print(ts_data3.get_data(day_index, list_len))
-        print(ts_data3.get_data(day_index, list_len, 'all'))
-        print(ts_data3.get_data(day_index, list_len, 'open'))
-        print(ts_data3.get_data(day_index, list_len, 'close'))
-        print(ts_data3.get_data(day_index, list_len, 'high'))
-        print(ts_data3.get_data(day_index, list_len, 'low'))
-        #print(ts_data3.get_data(day_index, list_len, 'volume'))
-        #print(ts_data3.get_data(day_index, list_len, 'value'))
-        print(ts_data3.get_data(day_index, list_len, 'median'))
-        print(ts_data3.get_data(day_index, list_len, 'typical'))
-        print(ts_data3.get_data(day_index, list_len, 'weighted'))
-
-        ts_data.print_c(3)
-
-        # ---------------------------------------------------------------------
+    old = False
+    if old:
+        # database_info = constant_database_data.pc1_server_role_db_info
         database_info = constant_database_data.laptop_analyze_server_role_db_info
+        # پتروشيمي مارون
         en_symbol_12_digit_code = 'IRO3PMRZ0001'
-        start_date_time = 20180410000000
-        end_date_time = 20190611000000
+        tsetmc_id = '53449700212786324'
+        date_m = 20190610
+
+        start_date_time = 20180610000000
+        #start_date_time = 20120106000000
+        end_date_time = 20190610000000
+        #end_date_time = 20180825000000
+        #end_date_time = 20180611000000
+
         time_frame = 'D1'
         adjusted_mod = constant.adjusted_mod_off
-        adjusted_type = constant.adjusted_type_capital_increase
-        data_count = 2000
+        data_count = 500
 
-        series_data = TimeSeriesData(database_info, en_symbol_12_digit_code,
-                                      start_date_time, end_date_time,
-                                      time_frame, adjusted_mod, adjusted_type, data_count)
+        ts_data = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
+                     time_frame, adjusted_mod, 1, data_count=data_count)
 
-        index = 0
-        data_type = constant.ts_data_type_close
-        res = series_data.get_data(index, data_count, data_type)
+        day_index = 0
+        list_len = 500
 
-        print(res)
-        print(len(res[0]))
+        d = ts_data.get_candle_date(day_index)
+
+        ts_data.print_c(d)
+        ts_data.print_c(ts_data.candle_date_list)
+
+        ts_data.print_c(ts_data.no_any_data)
+
+
+        print(ts_data.get_data(day_index, list_len))
+
+
+
+
+
+
+        t=False
+        if t:
+
+            err = None
+            res= ts_data.all_raw_adjusted_data
+            ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+            ts_data.print_c('-----------------------------')
+
+            res, err = ts_data.get_data(day_index, list_len)
+            ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data.get_adjusted_coefficient(int(end_date_time / 1000000))
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            ts_data.print_c(1)
+            #start_date_time = 20180610000000
+            #end_date_time = 20180724000000
+            #time_frame = 'D1'
+            adjusted_mod = constant.adjusted_mod_all_time
+            #data_count = 0
+
+            ts_data2 = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
+                         time_frame, adjusted_mod, 1, data_count=data_count)
+
+            res, err = ts_data2.get_data(day_index, list_len)
+            ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data2.get_adjusted_coefficient(int(end_date_time / 1000000))
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            ts_data.print_c(2)
+            #start_date_time = 20180610000000
+            #end_date_time = 20180724000000
+            #time_frame = 'D1'
+            adjusted_mod = constant.adjusted_mod_now_time
+            #data_count = 0
+
+            ts_data3 = TimeSeriesData(database_info, en_symbol_12_digit_code, start_date_time, end_date_time,
+                         time_frame, adjusted_mod, 1, data_count=data_count)
+
+            res, err = ts_data3.get_data(day_index, list_len)
+            ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            res = ts_data3.all_raw_adjusted_data
+            ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data3.get_adjusted_coefficient(int(end_date_time/1000000))
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data3.get_adjusted_coefficient(20170730)
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data3.get_adjusted_coefficient(20170930)
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+
+            # res, err = ts_data3.get_adjusted_coefficient(10200930)
+            # ts_data.print_c('res:{0}  error:{1}'.format(res, err))
+            print(ts_data3.get_data(day_index, list_len))
+            print(ts_data3.get_data(day_index, list_len, 'all'))
+            print(ts_data3.get_data(day_index, list_len, 'open'))
+            print(ts_data3.get_data(day_index, list_len, 'close'))
+            print(ts_data3.get_data(day_index, list_len, 'high'))
+            print(ts_data3.get_data(day_index, list_len, 'low'))
+            #print(ts_data3.get_data(day_index, list_len, 'volume'))
+            #print(ts_data3.get_data(day_index, list_len, 'value'))
+            print(ts_data3.get_data(day_index, list_len, 'median'))
+            print(ts_data3.get_data(day_index, list_len, 'typical'))
+            print(ts_data3.get_data(day_index, list_len, 'weighted'))
+
+            ts_data.print_c(3)
+
+            # ---------------------------------------------------------------------
+            database_info = constant_database_data.laptop_analyze_server_role_db_info
+            en_symbol_12_digit_code = 'IRO3PMRZ0001'
+            start_date_time = 20180410000000
+            end_date_time = 20190611000000
+            time_frame = 'D1'
+            adjusted_mod = constant.adjusted_mod_off
+            adjusted_type = constant.adjusted_type_capital_increase
+            data_count = 2000
+
+            series_data = TimeSeriesData(database_info, en_symbol_12_digit_code,
+                                          start_date_time, end_date_time,
+                                          time_frame, adjusted_mod, adjusted_type, data_count)
+
+            index = 0
+            data_type = constant.ts_data_type_close
+            res = series_data.get_data(index, data_count, data_type)
+
+            print(res)
+            print(len(res[0]))
